@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Generador con Editor de Texto</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      max-width: 800px;
+      margin: auto;
+      background-color: #f5f5f5;
+    }
+    
+    .container {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+    
+    input[type="text"], input[type="number"], input[type="color"] {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      box-sizing: border-box;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+    
+    input[type="range"] {
+      width: 100%;
+      margin-top: 5px;
+    }
+    
+    button {
+      margin-top: 20px;
+      padding: 12px 24px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    
+    button:hover {
+      background: #0056b3;
+    }
+    
+    .image-container {
+      position: relative;
+      display: inline-block;
+      margin-top: 20px;
+      max-width: 100%;
+    }
+    
+    img {
+      max-width: 100%;
+      display: none;
+      border-radius: 8px;
+    }
+    
+    .text-overlay {
+      position: absolute;
+      cursor: move;
+      user-select: none;
+      font-weight: bold;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      display: none;
+      text-align: center;
+      line-height: 1.2;
+      max-width: calc(100% - 2cm);
+      padding: 0 1cm;
+      box-sizing: border-box;
+    }
+    
+    .controls {
+      display: none;
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 15px;
+      border: 1px solid #ddd;
+    }
+    
+    .control-row {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    
+    .control-item {
+      flex: 1;
+    }
+    
+    .control-item label {
+      margin: 0;
+      font-size: 14px;
+    }
+    
+    .download-btn {
+      background: #28a745;
+      margin-left: 10px;
+    }
+    
+    .download-btn:hover {
+      background: #1e7e34;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>🎨 Generador de Imágenes con Editor de Texto</h2>
+    
+    <form id="generateForm">
+      <label>
+        Descripción (prompt):
+        <input type="text" id="promptInput" placeholder="Ej: una mesa en el salón" required />
+      </label>
+
+      <button type="submit">🚀 Generar Imagen</button>
+    </form>
+
+    <h3>Resultado:</h3>
+    <div class="image-container" id="imageContainer">
+      <img id="resultImage" alt="Imagen generada aparecerá aquí" />
+      <div class="text-overlay" id="textOverlay">Texto de ejemplo</div>
+    </div>
+
+    <!-- Controles de texto -->
+    <div class="controls" id="textControls">
+      <h4>✏️ Editor de Texto</h4>
+      
+      <div class="control-row">
+        <div class="control-item">
+          <label>Texto:</label>
+          <input type="text" id="textContent" placeholder="Escribe tu mensaje aquí" value="" />
+        </div>
+        
+        <div class="control-item">
+          <label>Ancho máximo: <span id="widthValue">80</span>%</label>
+          <input type="range" id="textWidth" min="30" max="95" value="80" />
+        </div>
+      </div>
+      
+      <div class="control-row">
+        <div class="control-item">
+          <label>Tamaño: <span id="sizeValue">24</span>px</label>
+          <input type="range" id="fontSize" min="12" max="100" value="24" />
+        </div>
+        
+        <div class="control-item">
+          <label>Color del texto:</label>
+          <input type="color" id="textColor" value="#ffffff" />
+        </div>
+      </div>
+      
+      <div class="control-row">
+        <div class="control-item">
+          <label>Posición X: <span id="xValue">50</span>%</label>
+          <input type="range" id="positionX" min="0" max="100" value="50" />
+        </div>
+        
+        <div class="control-item">
+          <label>Posición Y: <span id="yValue">50</span>%</label>
+          <input type="range" id="positionY" min="0" max="100" value="50" />
+        </div>
+      </div>
+      
+      <button type="button" id="downloadBtn" class="download-btn">📥 Descargar con Texto</button>
+    </div>
+  </div>
+
+  <script>
+    let isDragging = false;
+    let currentImage = null;
+
+    // Generar imagen
+    document.getElementById("generateForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+
+      const prompt = document.getElementById("promptInput").value.trim();
+      if (!prompt) return;
+
+      try {
+        const response = await fetch("/api/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt }),
+        });
+
+        const result = await response.json();
+        console.log("📦 Resultado del servidor:", result);
+
+        const img = document.getElementById("resultImage");
+        const raw = result.output?.[0];
+        const imageUrl = typeof raw === "string" ? raw : raw?.url;
+
+        if (imageUrl) {
+          img.src = imageUrl;
+          img.style.display = "block";
+          currentImage = imageUrl;
+          
+          // Mostrar controles de texto
+          document.getElementById("textControls").style.display = "block";
+          document.getElementById("textOverlay").style.display = "block";
+        } else {
+          alert("No se pudo obtener una URL válida de imagen.");
+          img.style.display = "none";
+        }
+      } catch (error) {
+        console.error("Error al generar imagen:", error);
+        alert("Error al contactar con el servidor.");
+      }
+    });
+
+    // Controles de texto
+    const textOverlay = document.getElementById("textOverlay");
+    const textContent = document.getElementById("textContent");
+    const fontSize = document.getElementById("fontSize");
+    const textColor = document.getElementById("textColor");
+    const positionX = document.getElementById("positionX");
+    const positionY = document.getElementById("positionY");
+    const textWidth = document.getElementById("textWidth");
+
+    // Función para formatear texto con salto de línea automático
+    function formatTextWithLineBreaks(text, maxWidth, fontSize, canvas = null) {
+      if (!text) return "Texto de ejemplo";
+      
+      const words = text.split(' ');
+      const lines = [];
+      let currentLine = '';
+      
+      // Crear contexto temporal para medir texto
+      const tempCanvas = canvas || document.createElement('canvas');
+      const ctx = tempCanvas.getContext('2d');
+      ctx.font = `bold ${fontSize}px Arial`;
+      
+      // Calcular ancho máximo en píxeles
+      const containerWidth = document.getElementById("imageContainer").offsetWidth;
+      const maxWidthPx = (maxWidth / 100) * containerWidth;
+      
+      for (let word of words) {
+        const testLine = currentLine ? currentLine + ' ' + word : word;
+        const metrics = ctx.measureText(testLine);
+        
+        if (metrics.width > maxWidthPx && currentLine !== '') {
+          lines.push(currentLine);
+          currentLine = word;
+        } else {
+          currentLine = testLine;
+        }
+      }
+      
+      if (currentLine) {
+        lines.push(currentLine);
+      }
+      
+      return lines.join('\n');
+    }
+
+    // Función para actualizar el texto formateado
+    function updateFormattedText() {
+      const text = textContent.value;
+      const size = parseInt(fontSize.value);
+      const width = parseInt(textWidth.value);
+      
+      if (text) {
+        const formattedText = formatTextWithLineBreaks(text, width, size);
+        textOverlay.textContent = formattedText;
+      } else {
+        textOverlay.textContent = "Texto de ejemplo";
+      }
+    }
+
+    // Actualizar texto
+    textContent.addEventListener("input", updateFormattedText);
+
+    // Actualizar ancho máximo
+    textWidth.addEventListener("input", function() {
+      textOverlay.style.maxWidth = this.value + "%";
+      document.getElementById("widthValue").textContent = this.value;
+      updateFormattedText();
+    });
+
+    // Actualizar tamaño
+    fontSize.addEventListener("input", function() {
+      textOverlay.style.fontSize = this.value + "px";
+      document.getElementById("sizeValue").textContent = this.value;
+      updateFormattedText();
+    });
+
+    // Actualizar color
+    textColor.addEventListener("input", function() {
+      textOverlay.style.color = this.value;
+    });
+
+    // Actualizar posición X
+    positionX.addEventListener("input", function() {
+      textOverlay.style.left = this.value + "%";
+      textOverlay.style.transform = `translate(-50%, -50%)`;
+      document.getElementById("xValue").textContent = this.value;
+    });
+
+    // Actualizar posición Y
+    positionY.addEventListener("input", function() {
+      textOverlay.style.top = this.value + "%";
+      textOverlay.style.transform = `translate(-50%, -50%)`;
+      document.getElementById("yValue").textContent = this.value;
+    });
+
+    // Arrastrar texto con mouse
+    textOverlay.addEventListener("mousedown", function(e) {
+      isDragging = true;
+      e.preventDefault();
+    });
+
+    document.addEventListener("mousemove", function(e) {
+      if (isDragging) {
+        const container = document.getElementById("imageContainer");
+        const rect = container.getBoundingClientRect();
+        
+        const x = ((e.clientX - rect.left) / rect.width) * 100;
+        const y = ((e.clientY - rect.top) / rect.height) * 100;
+        
+        // Limitar movimiento considerando el ancho del texto
+        const textWidthPercent = parseInt(textWidth.value);
+        const minX = textWidthPercent / 2;
+        const maxX = 100 - (textWidthPercent / 2);
+        
+        const clampedX = Math.max(minX, Math.min(maxX, x));
+        const clampedY = Math.max(10, Math.min(90, y));
+        
+        positionX.value = clampedX;
+        positionY.value = clampedY;
+        
+        textOverlay.style.left = clampedX + "%";
+        textOverlay.style.top = clampedY + "%";
+        
+        document.getElementById("xValue").textContent = Math.round(clampedX);
+        document.getElementById("yValue").textContent = Math.round(clampedY);
+      }
+    });
+
+    document.addEventListener("mouseup", function() {
+      isDragging = false;
+    });
+
+    // Función de descarga
+    document.getElementById("downloadBtn").addEventListener("click", function() {
+      if (!currentImage) return;
+
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      const img = new Image();
+
+      img.crossOrigin = "anonymous";
+      img.onload = function() {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        
+        // Dibujar imagen
+        ctx.drawImage(img, 0, 0);
+        
+        // Dibujar texto si hay contenido
+        const text = textContent.value;
+        if (text) {
+          const size = parseInt(fontSize.value);
+          const color = textColor.value;
+          const width = parseInt(textWidth.value);
+          const x = (parseInt(positionX.value) / 100) * canvas.width;
+          const y = (parseInt(positionY.value) / 100) * canvas.height;
+          
+          // Configurar estilos de texto
+          const scaledSize = size * (canvas.width / 512);
+          ctx.font = `bold ${scaledSize}px Arial`;
+          ctx.fillStyle = color;
+          ctx.strokeStyle = "rgba(0,0,0,0.7)";
+          ctx.lineWidth = 3;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          
+          // Formatear texto con saltos de línea
+          const maxWidthPx = (width / 100) * canvas.width;
+          const formattedText = formatTextWithLineBreaks(text, width, scaledSize, canvas);
+          const lines = formattedText.split('\n');
+          
+          // Dibujar cada línea
+          const lineHeight = scaledSize * 1.2;
+          const totalHeight = lines.length * lineHeight;
+          const startY = y - (totalHeight / 2) + (lineHeight / 2);
+          
+          lines.forEach((line, index) => {
+            const lineY = startY + (index * lineHeight);
+            ctx.strokeText(line, x, lineY);
+            ctx.fillText(line, x, lineY);
+          });
+        }
+        
+        // Descargar
+        const link = document.createElement("a");
+        link.download = "imagen_con_texto.png";
+        link.href = canvas.toDataURL();
+        link.click();
+      };
+      
+      img.src = currentImage;
+    });
+
+    // Inicializar posición del texto
+    textOverlay.style.transform = "translate(-50%, -50%)";
+    textOverlay.style.left = "50%";
+    textOverlay.style.top = "50%";
+    textOverlay.style.maxWidth = "80%";
+    
+    // Inicializar texto formateado
+    setTimeout(updateFormattedText, 100);
+  </script>
+</body>
+</html>
