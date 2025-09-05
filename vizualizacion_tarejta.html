@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tu Invitación - EventtEasy</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: radial-gradient(ellipse at center, #2c1810 0%, #1a0f08 70%, #0d0704 100%);
+      color: #fff;
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+
+    .loading {
+      font-size: 24px;
+      color: #fff;
+      text-align: center;
+      opacity: 0.8;
+    }
+
+    .error {
+      font-size: 20px;
+      color: #ff4444;
+      text-align: center;
+    }
+
+    .envelope-scene {
+      position: relative;
+      width: 400px;
+      height: 480px;
+      display: none;
+      perspective: 1200px;
+    }
+
+    /* Sobre cerrado */
+    .envelope {
+      position: relative;
+      width: 400px;
+      height: 280px;
+      transform-style: preserve-3d;
+    }
+
+    /* Base del sobre */
+    .envelope-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(145deg, #f5f3f0 0%, #e8e4dd 50%, #ddd7cc 100%);
+      border: 3px solid #c4b8a6;
+      border-radius: 8px;
+      box-shadow: 
+        0 15px 35px rgba(0,0,0,0.4),
+        inset 0 2px 5px rgba(255,255,255,0.2),
+        inset 0 -2px 5px rgba(0,0,0,0.1);
+    }
+
+    /* Solapa frontal del sobre */
+    .envelope-flap {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 400px;
+      height: 140px;
+      background: linear-gradient(145deg, #f5f3f0 0%, #e8e4dd 50%, #ddd7cc 100%);
+      border: 3px solid #c4b8a6;
+      border-bottom: none;
+      border-radius: 8px 8px 0 0;
+      transform-origin: bottom center;
+      animation: openEnvelope 2.5s ease-in-out forwards;
+      animation-delay: 1s;
+      z-index: 10;
+      box-shadow: 
+        0 8px 25px rgba(0,0,0,0.3),
+        inset 0 2px 5px rgba(255,255,255,0.2);
+    }
+
+    /* Triangulo interior de la solapa */
+    .envelope-flap::before {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 197px solid transparent;
+      border-right: 197px solid transparent;
+      border-top: 140px solid #e8e4dd;
+      border-radius: 4px;
+    }
+
+    /* Tarjeta dentro del sobre */
+    .invitation-card {
+    position: absolute;
+    width: 340px;
+    height: 240px;
+    background: linear-gradient(135deg, #fffaf0, #fdfdfd);
+    border: 2px solid #d4af37;
+    border-radius: 16px;
+    left: 50%;
+    bottom: 30px;
+    transform: translateX(-50%) translateY(0px);
+    opacity: 0;
+    animation: slideOutCard 2s ease-out forwards;
+    animation-delay: 2.8s;
+    animation-fill-mode: forwards;  /* 👈 clave: se mantiene en el estado final */
+    z-index: 5;
+    box-shadow: 
+        0 20px 40px rgba(0,0,0,0.25),
+        0 5px 15px rgba(0,0,0,0.15),
+        inset 0 1px 2px rgba(255,255,255,0.6);
+    overflow: hidden;
+    }
+
+
+
+    /* Contenido de la tarjeta */
+    .card-inner {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      text-align: center;
+      padding: 20px;
+      position: relative;
+      border-radius: 10px;
+    }
+
+    .card-title {
+      font-size: 28px;
+      font-weight: bold;
+      text-shadow: 0 3px 8px rgba(0,0,0,0.4);
+      margin-bottom: 15px;
+      opacity: 0;
+      animation: fadeInText 1s ease-out forwards;
+      animation-delay: 4s;
+    }
+
+    .card-subtitle {
+      font-size: 16px;
+      opacity: 0.9;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      opacity: 0;
+      animation: fadeInText 1s ease-out forwards;
+      animation-delay: 4.3s;
+    }
+
+    /* Imagen de invitación personalizada */
+    .invitation-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 10px;
+      display: none;
+    }
+
+    /* Botón LEÍDO */
+    .read-button {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(50px) scale(0.8);
+      background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      font-size: 16px;
+      font-weight: bold;
+      border-radius: 25px;
+      cursor: pointer;
+      box-shadow: 
+        0 8px 20px rgba(238, 90, 36, 0.4),
+        0 2px 4px rgba(0,0,0,0.2);
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+      z-index: 20;
+    }
+
+    .read-button:hover {
+      transform: translateX(-50%) translateY(0) scale(1.05);
+      box-shadow: 
+        0 12px 25px rgba(238, 90, 36, 0.6),
+        0 4px 8px rgba(0,0,0,0.3);
+    }
+
+    .read-button:active {
+      transform: translateX(-50%) translateY(0) scale(0.95);
+    }
+
+    /* Estados del botón */
+    .button-hiding {
+      opacity: 0 !important;
+      visibility: hidden !important;
+      transform: translateX(-50%) translateY(50px) scale(0.8) !important;
+    }
+
+    /* Estados de cierre de la tarjeta */
+    .card-closing {
+      animation: slideInCard 2s ease-in forwards !important;
+    }
+
+    .envelope-closing {
+      animation: closeEnvelope 2s ease-in forwards !important;
+    }
+
+    .scene-hidden {
+      opacity: 0;
+      transform: scale(0.8);
+      transition: all 1s ease-out;
+    }
+
+    /* Efectos de partículas */
+    .sparkles {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 15;
+    }
+
+    .sparkle {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      background: #ffd700;
+      border-radius: 50%;
+      animation: twinkle 2.5s infinite;
+      opacity: 0;
+      box-shadow: 0 0 10px #ffd700;
+    }
+
+    /* Resplandor alrededor del sobre */
+    .envelope-glow {
+      position: absolute;
+      top: -20px;
+      left: -20px;
+      right: -20px;
+      bottom: -20px;
+      background: radial-gradient(ellipse at center, rgba(255,215,0,0.15) 0%, transparent 70%);
+      border-radius: 20px;
+      animation: gentleGlow 3s ease-in-out infinite;
+      animation-delay: 3.5s;
+    }
+
+    /* Efecto flotante para la tarjeta */
+    .floating {
+    opacity: 1 !important;
+    animation: cardFloat 4s ease-in-out infinite;
+    }
+
+
+
+    /* Animaciones */
+    @keyframes openEnvelope {
+      0% {
+        transform: rotateX(0deg);
+      }
+      70% {
+        transform: rotateX(-135deg);
+      }
+      100% {
+        transform: rotateX(-140deg);
+      }
+    }
+
+    @keyframes closeEnvelope {
+      0% {
+        transform: rotateX(-140deg);
+      }
+      30% {
+        transform: rotateX(-120deg);
+      }
+      100% {
+        transform: rotateX(0deg);
+      }
+    }
+
+    @keyframes slideOutCard {
+    0% {
+        transform: translateX(-50%) translateY(0px);
+        opacity: 0;
+    }
+    50% {
+        transform: translateX(-50%) translateY(-60px);
+        opacity: 0.7;
+    }
+    100% {
+        transform: translateX(-50%) translateY(-120px);
+        opacity: 1;
+    }
+    }
+
+
+    @keyframes slideInCard {
+      0% {
+        transform: translateX(-50%) translateY(-120px);
+        opacity: 1;
+      }
+      50% {
+        transform: translateX(-50%) translateY(-60px);
+        opacity: 0.7;
+      }
+      100% {
+        transform: translateX(-50%) translateY(0px);
+        opacity: 0;
+      }
+    }
+
+    @keyframes fadeInText {
+      0% {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes twinkle {
+      0%, 100% {
+        opacity: 0;
+        transform: scale(0) rotate(0deg);
+      }
+      25% {
+        opacity: 0.8;
+        transform: scale(1) rotate(90deg);
+      }
+      50% {
+        opacity: 1;
+        transform: scale(1.2) rotate(180deg);
+      }
+      75% {
+        opacity: 0.6;
+        transform: scale(0.8) rotate(270deg);
+      }
+    }
+
+    @keyframes gentleGlow {
+      0%, 100% {
+        opacity: 0.3;
+        transform: scale(1);
+      }
+      50% {
+        opacity: 0.5;
+        transform: scale(1.05);
+      }
+    }
+
+    @keyframes cardFloat {
+        0% {
+            transform: translateX(-50%) translateY(-120px);
+        }
+        50% {
+            transform: translateX(-50%) translateY(-130px);
+        }
+        100% {
+            transform: translateX(-50%) translateY(-120px);
+        }
+        }
+
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .envelope-scene {
+        width: 300px;
+        height: 380px;
+      }
+      
+      .envelope {
+        width: 300px;
+        height: 210px;
+      }
+      
+      .envelope-back,
+      .envelope-flap {
+        width: 300px;
+      }
+      
+      .envelope-flap {
+        height: 105px;
+      }
+      
+      .envelope-flap::before {
+        border-left-width: 147px;
+        border-right-width: 147px;
+        border-top-width: 105px;
+      }
+      
+      .invitation-card {
+        width: 260px;
+        height: 180px;
+      }
+      
+      .card-title {
+        font-size: 22px;
+      }
+      
+      .card-subtitle {
+        font-size: 14px;
+      }
+
+      .read-button {
+        padding: 10px 25px;
+        font-size: 14px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .envelope-scene {
+        width: 280px;
+        height: 360px;
+      }
+      
+      .envelope {
+        width: 280px;
+        height: 190px;
+      }
+      
+      .envelope-back,
+      .envelope-flap {
+        width: 280px;
+      }
+      
+      .invitation-card {
+        width: 240px;
+        height: 160px;
+      }
+
+      .read-button {
+        padding: 8px 20px;
+        font-size: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="loading" class="loading">
+    Cargando tu invitación...
+  </div>
+  
+  <div id="error" class="error" style="display: none;">
+    No se pudo cargar la invitación. Verifica que el enlace sea correcto.
+  </div>
+  
+  <div id="envelopeScene" class="envelope-scene">
+    <div class="envelope-glow"></div>
+    
+    <div class="envelope">
+      <div class="envelope-back"></div>
+      <div class="envelope-flap"></div>
+      
+      <div class="invitation-card" id="invitationCard">
+        <div class="card-inner" id="cardInner">
+          <div class="card-title">Tu Invitación</div>
+          <div class="card-subtitle">Esperando tu diseño personalizado</div>
+          <img id="invitationImage" class="invitation-image" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Botón LEÍDO -->
+    <button id="readButton" class="read-button">LEÍDO</button>
+  </div>
+
+  <div class="sparkles" id="sparkles"></div>
+
+  <script>
+  function startAnimation() {
+    // Ocultar loading
+    const loadingEl = document.getElementById('loading');
+    if (loadingEl) loadingEl.style.display = 'none';
+
+    // Mostrar escena del sobre
+    const envelopeScene = document.getElementById('envelopeScene');
+    if (envelopeScene) envelopeScene.style.display = 'block';
+
+    // Crear efectos de partículas
+    createMagicalSparkles();
+
+    // Agregar efecto flotante a la tarjeta
+    setTimeout(() => {
+      const invitationCard = document.getElementById('invitationCard');
+      if (invitationCard) invitationCard.classList.add('floating');
+    }, 5000);
+
+    // Mostrar botón LEÍDO
+    setTimeout(() => {
+      const readButton = document.getElementById('readButton');
+      if (readButton) {
+        readButton.style.opacity = '1';
+        readButton.style.visibility = 'visible';
+        readButton.style.transform = 'translateX(-50%) translateY(0) scale(1)';
+      }
+    }, 5000);
+  }
+
+  function createMagicalSparkles() {
+    const sparklesContainer = document.getElementById('sparkles');
+    if (!sparklesContainer) return;
+
+    for (let wave = 0; wave < 3; wave++) {
+      setTimeout(() => {
+        for (let i = 0; i < 15; i++) {
+          setTimeout(() => {
+            const sparkle = document.createElement('div');
+            sparkle.className = 'sparkle';
+
+            const angle = (i / 15) * Math.PI * 2;
+            const radius = 200 + Math.random() * 100;
+            const x = 50 + Math.cos(angle) * (radius / window.innerWidth * 50);
+            const y = 50 + Math.sin(angle) * (radius / window.innerHeight * 50);
+
+            sparkle.style.left = Math.max(5, Math.min(95, x)) + '%';
+            sparkle.style.top = Math.max(5, Math.min(95, y)) + '%';
+            sparkle.style.animationDelay = Math.random() * 2 + 's';
+
+            const colors = ['#ffd700', '#fff', '#ffed4e', '#fbbf24'];
+            sparkle.style.background = colors[Math.floor(Math.random() * colors.length)];
+            sparkle.style.boxShadow = `0 0 10px ${sparkle.style.background}`;
+
+            sparklesContainer.appendChild(sparkle);
+
+            setTimeout(() => sparkle.remove(), 5000);
+          }, i * 100);
+        }
+      }, wave * 2000);
+    }
+  }
+
+  // Función para cargar imagen y textos
+  function loadInvitation(imageUrl, texts) {
+  const img = document.getElementById('invitationImage');
+  const cardInner = document.getElementById('cardInner');
+
+  if (!img || !cardInner) return;
+
+  img.onload = function () {
+    // Reemplazar contenido por la imagen
+    cardInner.style.background = 'none';
+    cardInner.innerHTML = '';
+    img.style.display = 'block';
+    cardInner.appendChild(img);
+
+    // Dibujar textos personalizados
+    if (texts && Array.isArray(texts)) {
+      texts.forEach(t => {
+        if (t.shape === "arc") {
+          // ✅ Texto en arco
+          const arcContainer = document.createElement("div");
+          arcContainer.style.position = "absolute";
+          arcContainer.style.left = t.left || "50%";
+          arcContainer.style.top = t.top || "50%";
+          arcContainer.style.transform = "translate(-50%, -50%)";
+          arcContainer.style.textAlign = "center";
+
+          const text = t.text || "";
+          const radius = parseInt(t.arcRadius) || 30;
+          const direction = t.arcDirection === "down" ? 1 : -1;
+
+          [...text].forEach((char, i) => {
+            const span = document.createElement("span");
+            span.textContent = char;
+            span.style.display = "inline-block";
+            span.style.fontSize = t.fontSize || "24px";
+            span.style.color = t.color || "#fff";
+            span.style.fontFamily = t.fontFamily || "Arial";
+            span.style.fontWeight = "bold";
+
+            const angle = (i - text.length / 2) * (15 / radius);
+            span.style.transform = `rotate(${angle * (180 / Math.PI) * direction}deg) translate(0, ${direction * radius}px)`;
+
+            arcContainer.appendChild(span);
+          });
+
+          cardInner.appendChild(arcContainer);
+
+        } else {
+          // ✅ Texto normal
+          const textEl = document.createElement("div");
+          textEl.style.position = "absolute";
+          textEl.style.left = t.left || "50%";
+          textEl.style.top = t.top || "50%";
+          textEl.style.transform = "translate(-50%, -50%)";
+          textEl.style.fontSize = t.fontSize || "24px";
+          textEl.style.color = t.color || "#fff";
+          textEl.style.fontFamily = t.fontFamily || "Arial";
+          textEl.style.maxWidth = t.maxWidth || "300px";
+          textEl.style.textAlign = "center";
+          textEl.style.whiteSpace = "pre-wrap";
+          textEl.style.fontWeight = "bold";
+          textEl.textContent = t.text || "";
+
+          cardInner.appendChild(textEl);
+        }
+      });
+    }
+  };
+
+  img.onerror = function () {
+    console.error('No se pudo cargar la imagen de invitación');
+  };
+
+  img.src = imageUrl;
+}
+
+
+  document.addEventListener('DOMContentLoaded', function () {
+    
+    
+
+   // Obtener parámetros de la URL
+  const params = new URLSearchParams(window.location.search);
+  const imgUrl = params.get('img');
+  const textsParam = params.get('texts');
+  const usuarioId = params.get('usuarioId'); // 👈 aquí recibes el id del usuario
+
+  let texts = [];
+  if (textsParam) {
+    try { texts = JSON.parse(decodeURIComponent(textsParam)); }
+    catch (e) { console.error("Error al procesar los textos:", e); }
+  }
+
+  if (imgUrl) loadInvitation(decodeURIComponent(imgUrl), texts);
+
+  // ✅ Mostrar en consola el id del usuario recibido
+  if (usuarioId) {
+    console.log("📌 Invitación generada por usuario:", usuarioId);
+    // Si quieres también mostrarlo en la tarjeta
+    const cardInner = document.getElementById('cardInner');
+    if (cardInner) {
+      const userTag = document.createElement("div");
+      userTag.textContent = `👤 Usuario: ${usuarioId}`;
+      userTag.style.position = "absolute";
+      userTag.style.bottom = "10px";
+      userTag.style.right = "10px";
+      userTag.style.fontSize = "14px";
+      userTag.style.color = "#ffd700";
+      cardInner.appendChild(userTag);
+    }
+  }
+
+  setTimeout(startAnimation, 800);
+  });
+  
+</script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+  // ✅ Configuración Firebase
+  const firebaseConfig = {
+    apiKey: "AIzaSyC2nAptgapGrsti162z0Jjr2huEDQyxzAM",
+    authDomain: "eventeasy-e28a2.firebaseapp.com",
+    projectId: "eventeasy-e28a2",
+    storageBucket: "eventeasy-e28a2.appspot.com",
+    messagingSenderId: "580114556082",
+    appId: "1:580114556082:web:923cd5ea14a82e3ea3d5ab",
+    measurementId: "G-8BWDDQP0X9"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // ✅ Recibir usuarioId desde la URL
+  const params = new URLSearchParams(window.location.search);
+  const usuarioId = params.get("usuarioId");
+
+  // ✅ Función para guardar la respuesta
+  async function guardarRespuesta(nombre, estado) {
+    try {
+      await addDoc(collection(db, "TarjetasInvitacion"), {
+        usuarioId: usuarioId || "sin-id",
+        nombre: nombre,
+        estado: estado,
+        fecha: new Date().toISOString()
+      });
+      console.log("✅ Respuesta guardada:", { usuarioId, nombre, estado });
+    } catch (error) {
+      console.error("❌ Error al guardar en Firestore:", error);
+    }
+  }
+
+  // ✅ Botón LEÍDO
+  const readButton = document.getElementById('readButton');
+  if (readButton) {
+    readButton.addEventListener('click', function () {
+      const invitationCard = document.getElementById('invitationCard');
+      const envelopeFlap = document.querySelector('.envelope-flap');
+      const envelopeScene = document.getElementById('envelopeScene');
+
+      this.classList.add('button-hiding');
+
+      if (invitationCard) {
+        invitationCard.classList.remove('floating');
+        invitationCard.classList.add('card-closing');
+      }
+
+      setTimeout(() => { if (envelopeFlap) envelopeFlap.classList.add('envelope-closing'); }, 1500);
+
+      setTimeout(() => {
+        if (envelopeScene) envelopeScene.classList.add('scene-hidden');
+        setTimeout(() => {
+          document.body.innerHTML = `
+            <div style="text-align: center; color: #fff; font-size: 22px; opacity: 0; animation: fadeIn 1s ease-out forwards;">
+              <h2 style="margin-bottom:15px; color:#ffd700;">💌 Responde a la invitación</h2>
+              
+              <label style="display:block; margin-bottom:10px; font-size:18px; color:#fff;">
+                Escribe tu nombre:
+              </label>
+              <input id="guestName" type="text" placeholder="Tu nombre" 
+                style="padding:10px; border-radius:6px; border:none; width:80%; max-width:300px; margin-bottom:20px; font-size:16px; text-align:center;" />
+
+              <div style="margin-top:15px;">
+                <button id="acceptBtn" style="padding:10px 20px; margin:5px; border:none; border-radius:6px; background:#28a745; color:#fff; font-size:16px; cursor:pointer;">
+                  ✅ Aceptar
+                </button>
+                <button id="rejectBtn" style="padding:10px 20px; margin:5px; border:none; border-radius:6px; background:#dc3545; color:#fff; font-size:16px; cursor:pointer;">
+                  ❌ Rechazar
+                </button>
+              </div>
+            </div>
+
+            <style>
+              @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(20px); }
+                to { opacity: 1; transform: translateY(0); }
+              }
+            </style>
+          `;
+
+          // 🎯 Capturar acciones
+          const nameInput = document.getElementById('guestName');
+          const acceptBtn = document.getElementById('acceptBtn');
+          const rejectBtn = document.getElementById('rejectBtn');
+
+          acceptBtn.addEventListener('click', async () => {
+            const name = nameInput.value.trim();
+            if (!name) {
+              alert("Por favor escribe tu nombre antes de aceptar.");
+              return;
+            }
+            await guardarRespuesta(name, "aceptado");
+            alert(`🎉 Gracias ${name}, confirmaste tu asistencia ✅`);
+          });
+
+          rejectBtn.addEventListener('click', async () => {
+            const name = nameInput.value.trim() || "Invitado";
+            await guardarRespuesta(name, "rechazado");
+            alert(`😢 ${name} rechazó la invitación ❌`);
+          });
+        }, 1000);
+      }, 3500);
+    });
+  }
+</script>
+
+</body>
+</html>

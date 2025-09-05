@@ -5,427 +5,1038 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Generador con Editor de Texto</title>
   <style>
+  /* --------- Estilos base --------- */
+  body {
+    font-family: 'Segoe UI', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f0f8ff; /* azul clarito */
+    color: #222; /* texto oscuro para contraste */
+  }
+
+  .container {
+    max-width: 600px;
+    margin: auto;
+    padding: 20px;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    text-align: center;
+  }
+
+  /* --------- Encabezado --------- */
+  .brand {
+    font-size: 28px;
+    font-weight: bold;
+    color: #007bff;
+    margin-bottom: 10px;
+  }
+
+  .subtitle {
+    font-size: 18px;
+    font-weight: 500;
+    color: #555;
+    margin-bottom: 25px;
+  }
+
+  h2.title {
+    font-size: 22px;
+    font-weight: bold;
+    color: #111;
+    margin-bottom: 15px;
+  }
+
+  .user-info {
+    font-weight: bold;
+    color: #fff;
+    background: linear-gradient(90deg, #007bff, #00c6ff);
+    padding: 12px 20px;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 1.2rem;
+    box-shadow: 0px 4px 10px rgba(0,0,0,0.2);
+    max-width: 400px;
+    margin: 20px auto;
+  }
+
+  /* --------- Inputs --------- */
+  label {
+    display: block;
+    margin-top: 15px;
+    font-weight: bold;
+    font-size: 15px;
+    text-align: left;
+  }
+
+  input[type="text"],
+  input[type="number"],
+  input[type="color"],
+  select {
+    width: 100%;
+    padding: 12px;
+    margin-top: 5px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 16px;
+    background: #fdfdfd;
+  }
+
+  input[type="range"] {
+    width: 100%;
+    margin-top: 5px;
+  }
+
+  /* --------- Botones --------- */
+  button {
+    margin-top: 20px;
+    padding: 14px 20px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    transition: transform 0.2s, background 0.2s;
+    width: 100%;
+  }
+
+  button:hover {
+    background: #0056b3;
+    transform: scale(1.03);
+  }
+
+  .download-btn {
+    background: #111; /* negro elegante */
+    margin-top: 10px;
+  }
+
+  .download-btn:hover {
+    background: #333;
+  }
+
+  .add-text-btn, .confirm-btn {
+    background: #111;
+    margin-top: 10px;
+    width: auto;
+    padding: 10px 20px;
+  }
+
+  .add-text-btn:hover, .confirm-btn:hover {
+    background: #333;
+  }
+
+  .delete-btn {
+    background: #dc3545;
+    padding: 5px 10px;
+    font-size: 12px;
+    margin-left: 10px;
+    width: auto;
+  }
+
+  .delete-btn:hover {
+    background: #c82333;
+  }
+
+  /* --------- Imagen generada --------- */
+  .image-container {
+    position: relative;   /* asegura que los hijos absolutos se posicionen bien */
+    margin-top: 20px;
+    max-width: 100%;
+    display: inline-block;
+    z-index: 0;           /* 👈 para que la imagen quede en la capa base */
+  }
+
+  img {
+    max-width: 100%;
+    display: none;        /* oculto hasta que se genere */
+    border-radius: 12px;
+    border: 2px solid #007bff;
+    display: block;       /* 👈 asegúrate de cambiarlo a block cuando cargue */
+    z-index: 1;           /* debajo del texto */
+    position: relative;
+  }
+  .text-overlay {
+    position: absolute;
+    cursor: move;
+    user-select: none;
+    font-weight: bold;
+    text-shadow: 2px 2px 6px rgba(0,0,0,0.7);
+    white-space: pre-wrap;
+    text-align: center;
+    line-height: 1.3;
+    color: #fff;
+    border: 2px dashed transparent;
+    padding: 4px;
+    min-width: 20px;
+    min-height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2; /* 👈 AÑADIR ESTA LÍNEA */
+  }
+
+  .text-overlay:hover {
+    border-color: #007bff;
+  }
+
+  .text-overlay.selected {
+    border-color: #007bff;
+    background-color: rgba(0, 123, 255, 0.1);
+  }
+
+  /* Contenedor para texto en arco */
+  .arc-container {
+    position: relative;
+    display: inline-block;
+    transform-origin: center;
+  }
+
+  /* Controles de redimensionamiento */
+  .resize-handle {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: #007bff;
+    border: 1px solid #fff;
+    border-radius: 50%;
+    display: none;
+    z-index: 10;
+  }
+
+  .text-overlay.selected .resize-handle {
+    display: block;
+  }
+
+  .resize-handle.bottom-right {
+    bottom: -5px;
+    right: -5px;
+    cursor: se-resize;
+  }
+
+  /* --------- Controles --------- */
+  .controls {
+    display: none;
+    background: #f9f9f9;
+    padding: 15px;
+    border-radius: 12px;
+    margin-top: 20px;
+    border: 1px solid #ddd;
+    text-align: left;
+  }
+
+  .control-row {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+
+  .control-item {
+    flex: 1;
+  }
+
+  .control-item label {
+    margin: 0 0 5px 0;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .text-list {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 15px;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  .text-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    margin-bottom: 5px;
+    background: #f8f9fa;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+
+  .text-item:hover {
+    background: #e9ecef;
+  }
+
+  .text-item.active {
+    background: #007bff;
+    color: white;
+  }
+
+  /* --------- Responsive --------- */
+  @media (max-width: 768px) {
     body {
-      font-family: sans-serif;
-      padding: 20px;
-      max-width: 800px;
-      margin: auto;
-      background-color: #f5f5f5;
+      padding: 10px;
     }
-    
     .container {
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-    
-    label {
-      display: block;
-      margin-top: 15px;
-      font-weight: bold;
-    }
-    
-    input[type="text"], input[type="number"], input[type="color"] {
-      width: 100%;
-      padding: 8px;
-      margin-top: 5px;
-      box-sizing: border-box;
-      border: 1px solid #ddd;
-      border-radius: 5px;
-    }
-    
-    input[type="range"] {
-      width: 100%;
-      margin-top: 5px;
-    }
-    
-    button {
-      margin-top: 20px;
-      padding: 12px 24px;
-      background: #007bff;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 16px;
-    }
-    
-    button:hover {
-      background: #0056b3;
-    }
-    
-    .image-container {
-      position: relative;
-      display: inline-block;
-      margin-top: 20px;
-      max-width: 100%;
-    }
-    
-    img {
-      max-width: 100%;
-      display: none;
-      border-radius: 8px;
-    }
-    
-    .text-overlay {
-      position: absolute;
-      cursor: move;
-      user-select: none;
-      font-weight: bold;
-      text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
-      white-space: pre-wrap;
-      word-wrap: break-word;
-      display: none;
-      text-align: center;
-      line-height: 1.2;
-      max-width: calc(100% - 2cm);
-      padding: 0 1cm;
-      box-sizing: border-box;
-    }
-    
-    .controls {
-      display: none;
-      background: #f8f9fa;
       padding: 15px;
-      border-radius: 8px;
-      margin-top: 15px;
-      border: 1px solid #ddd;
     }
-    
-    .control-row {
-      display: flex;
-      gap: 15px;
-      align-items: center;
-      margin-bottom: 10px;
+    .brand {
+      font-size: 24px;
     }
-    
-    .control-item {
-      flex: 1;
+    h2.title {
+      font-size: 20px;
     }
-    
-    .control-item label {
-      margin: 0;
-      font-size: 14px;
-    }
-    
-    .download-btn {
-      background: #28a745;
-      margin-left: 10px;
-    }
-    
-    .download-btn:hover {
-      background: #1e7e34;
-    }
-  </style>
+  }
+</style>
+
 </head>
 <body>
   <div class="container">
-    <h2>🎨 Generador de Imágenes con Editor de Texto</h2>
-    
+
+    <!-- Marca y slogan -->
+    <div class="brand">EventtEasy</div>
+    <div class="subtitle">🎉 Tu tarjeta, tu presentación</div>
+      Con EventtEasy puedes crear una invitación única, agregarle tu propio mensaje ✨ y compartirla con un enlace.
+    </p>
+
+    <p id="userInfo" class="user-info"></p>
+
+
+    <!-- Formulario para generar -->
     <form id="generateForm">
       <label>
-        Descripción (prompt):
-        <input type="text" id="promptInput" placeholder="Ej: una mesa en el salón" required />
+        Descripción como quieres tu tarjeta:
+        <input type="text" id="promptInput" placeholder="Ej: QUIERO UN CARROS DEPORTIVO " required />
       </label>
 
       <button type="submit">🚀 Generar Imagen</button>
     </form>
 
-    <h3>Resultado:</h3>
+    <!-- Contenedor del resultado -->
+    <h3 style="margin-top:30px;">📸 Vista previa de tu tarjeta</h3>
     <div class="image-container" id="imageContainer">
-      <img id="resultImage" alt="Imagen generada aparecerá aquí" />
-      <div class="text-overlay" id="textOverlay">Texto de ejemplo</div>
+        <img id="resultImage" alt="" />
+        <!-- Aquí van los textos superpuestos -->
     </div>
+
+
+    
+
+
 
     <!-- Controles de texto -->
     <div class="controls" id="textControls">
-      <h4>✏️ Editor de Texto</h4>
+      <h4>✏️ Personaliza tu mensaje</h4>
       
-      <div class="control-row">
-        <div class="control-item">
-          <label>Texto:</label>
-          <input type="text" id="textContent" placeholder="Escribe tu mensaje aquí" value="" />
+      <button type="button" id="addTextBtn" class="add-text-btn">➕ Agregar Texto</button>
+      
+      <div class="text-list" id="textList"></div>
+
+      <div id="textEditor" style="display: none;">
+        <div class="control-row">
+          <div class="control-item">
+            <label>Texto:</label>
+            <input type="text" id="textContent" placeholder="Escribe tu mensaje aquí" />
+          </div>
         </div>
         
-        <div class="control-item">
-          <label>Ancho máximo: <span id="widthValue">80</span>%</label>
-          <input type="range" id="textWidth" min="30" max="95" value="80" />
-        </div>
-      </div>
-      
-      <div class="control-row">
-        <div class="control-item">
-          <label>Tamaño: <span id="sizeValue">24</span>px</label>
-          <input type="range" id="fontSize" min="12" max="100" value="24" />
+        <div class="control-row">
+          <div class="control-item">
+            <label>Fuente:</label>
+            <select id="fontFamily">
+              <option value="Arial">Arial</option>
+              <option value="Times New Roman">Times New Roman</option>
+              <option value="Courier New">Courier New</option>
+              <option value="Georgia">Georgia</option>
+              <option value="Trebuchet MS">Trebuchet MS</option>
+              <option value="Verdana">Verdana</option>
+              <option value="Comic Sans MS">Comic Sans MS</option>
+              <option value="Impact">Impact</option>
+              <option value="Brush Script MT">Brush Script (Cursiva)</option>
+              <option value="Lucida Handwriting">Lucida Handwriting (Cursiva)</option>
+              <option value="Pacifico">Pacifico (Cursiva)</option>
+            </select>
+          </div>
+          
+          <div class="control-item">
+            <label>Tamaño: <span id="sizeValue">24</span>px</label>
+            <input type="range" id="fontSize" min="12" max="100" value="24" />
+          </div>
         </div>
         
-        <div class="control-item">
-          <label>Color del texto:</label>
-          <input type="color" id="textColor" value="#ffffff" />
+        <div class="control-row">
+          <div class="control-item">
+            <label>Color del texto:</label>
+            <input type="color" id="textColor" value="#ffffff" />
+          </div>
+          
+          <div class="control-item">
+            <label>Ancho máximo: <span id="widthValue">300</span>px</label>
+            <input type="range" id="textWidth" min="100" max="500" value="300" />
+          </div>
         </div>
-      </div>
-      
-      <div class="control-row">
-        <div class="control-item">
-          <label>Posición X: <span id="xValue">50</span>%</label>
-          <input type="range" id="positionX" min="0" max="100" value="50" />
+
+        <div class="control-row">
+          <div class="control-item">
+            <label>Forma del texto:</label>
+            <select id="textShape">
+              <option value="normal">Normal</option>
+              <option value="arc">Arco</option>
+            </select>
+          </div>
+
+          <div class="control-item" id="arcDirectionControls" style="display:none;">
+          <label>Dirección:</label>
+          <select id="arcDirection">
+            <option value="up">Hacia arriba</option>
+            <option value="down">Hacia abajo</option>
+          </select>
         </div>
         
-        <div class="control-item">
-          <label>Posición Y: <span id="yValue">50</span>%</label>
-          <input type="range" id="positionY" min="0" max="100" value="50" />
         </div>
+        
+        <button type="button" id="confirmBtn" class="confirm-btn">✅ Confirmar</button>
       </div>
-      
-      <button type="button" id="downloadBtn" class="download-btn">📥 Descargar con Texto</button>
+
+      <!-- Botón de enlace -->
+      <button type="button" id="generateUrlBtn" class="download-btn">
+        ✨ Generar enlace de tu tarjeta
+      </button>
+      <p id="generatedUrl" style="margin-top:15px; font-weight:bold; color:#007bff; display:none;"></p>
+
+
     </div>
   </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://upload-widget.cloudinary.com/global/all.js"></script>
+
+
+  <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getFirestore, collection, query, where, getDocs, setDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyC2nAptgapGrsti162z0Jjr2huEDQyxzAM",
+    authDomain: "eventeasy-e28a2.firebaseapp.com",
+    projectId: "eventeasy-e28a2",
+    storageBucket: "eventeasy-e28a2.appspot.com",
+    messagingSenderId: "580114556082",
+    appId: "1:580114556082:web:923cd5ea14a82e3ea3d5ab",
+    measurementId: "G-8BWDDQP0X9"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+    async function cargarUsuario() {
+    // 👇 Obtener usuarioId desde la URL
+    const params = new URLSearchParams(window.location.search);
+    const usuarioId = params.get("usuarioId");
+
+    if (!usuarioId) {
+      console.error("❌ No se recibió usuarioId en la URL");
+      return;
+    }
+
+    const info = document.getElementById("userInfo");
+
+    try {
+      const q = query(collection(db, "Usuarios"), where("id", "==", usuarioId));
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        querySnapshot.forEach(docSnap => {
+          const data = docSnap.data();
+          if (info) info.textContent = ` Bienvenido ${data.nombre}`;
+          console.log("✅ Usuario encontrado:", data);
+        });
+      } else {
+        const newRef = doc(db, "Usuarios", usuarioId);
+        await setDoc(newRef, { id: usuarioId, nombre: "Prueba" });
+        if (info) info.textContent = "ℹ️ Usuario de prueba creado automáticamente (nombre: Prueba)";
+        console.log("✅ Usuario de prueba creado");
+      }
+    } catch (error) {
+      console.error("❌ Error al consultar Firestore:", error);
+    }
+}
+
+  cargarUsuario();
+</script>
+
 
   <script>
     let isDragging = false;
     let currentImage = null;
+    let currentTextElement = null;
+    let textElements = [];
+    let textCounter = 0;
+
+  
+    // Cambio de dirección del arco
+    document.getElementById('arcDirection').addEventListener('change', function() {
+      if (currentTextElement) {
+        const arcRadius = parseInt(currentTextElement.getAttribute('data-arc-radius')) || 30;
+        const direction = this.value;
+        applyTextShape(currentTextElement, 'arc', arcRadius, direction);
+      }
+    });
+
+    // Cuando cambia la forma de texto
+    document.getElementById('textShape').addEventListener('change', function() {
+      if (currentTextElement) {
+        const arcRadius = parseInt(currentTextElement.getAttribute('data-arc-radius')) || 30;
+        const direction = currentTextElement.getAttribute('data-arc-direction') || "up";
+
+        if (this.value === 'arc') {
+          applyTextShape(currentTextElement, 'arc', arcRadius, direction);
+          document.getElementById('arcDirectionControls').style.display = 'block';
+        } else {
+          applyTextShape(currentTextElement, 'normal', arcRadius, direction);
+          document.getElementById('arcDirectionControls').style.display = 'none';
+        }
+      }
+    });
 
     // Generar imagen
-    document.getElementById("generateForm").addEventListener("submit", async function (e) {
-      e.preventDefault();
+    document.getElementById("generateForm").addEventListener("submit", function (e) {
+      e.preventDefault(); 
 
-      const prompt = document.getElementById("promptInput").value.trim();
-      if (!prompt) return;
+      const img = document.getElementById("resultImage");
+      img.src = "./mi_foto.png"; 
+      img.style.display = "block";
 
-      try {
-        const response = await fetch("/api/generate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt }),
+      // 🔑 Guardar la ruta en currentImage
+      currentImage = img.src;
+
+      // Mostrar controles de texto
+      document.getElementById("textControls").style.display = "block";
+    });
+
+
+
+/* 
+// ===============================
+// ⚠️ LÓGICA ORIGINAL CON BACKEND (descomentar si quieres volver a usar IA)
+// ===============================
+
+document.getElementById("generateForm").addEventListener("submit", async function (e) {
+  e.preventDefault();
+
+  const prompt = document.getElementById("promptInput").value.trim();
+  if (!prompt) return;
+
+  try {
+    const response = await fetch("/api/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt }),
+    });
+
+    const result = await response.json();
+    console.log("📦 Resultado del servidor:", result);
+
+    const img = document.getElementById("resultImage");
+    const raw = result.output?.[0];
+    const imageUrl = typeof raw === "string" ? raw : raw?.url;
+
+    if (imageUrl) {
+      img.src = imageUrl;
+      img.style.display = "block";
+      currentImage = imageUrl;
+      document.getElementById("textControls").style.display = "block";
+    } else {
+      alert("No se pudo obtener una URL válida de imagen.");
+      img.style.display = "none";
+    }
+  } catch (error) {
+    console.error("Error al generar imagen:", error);
+    alert("Error al contactar con el servidor.");
+  }
+});
+*/
+
+
+    // Función para crear elemento de texto
+    function createTextElement(text = "Texto de ejemplo") {
+    const textElement = document.createElement('div');
+    textElement.className = 'text-overlay';
+    textElement.id = 'text_' + (++textCounter);
+    textElement.setAttribute('data-original-text', text);
+    textElement.setAttribute('data-shape', 'normal');
+    textElement.setAttribute('data-arc-radius', '30');
+    textElement.setAttribute('data-arc-direction', 'up');
+    
+    // 👈 PROBLEMA AQUÍ: posicionamiento incorrecto
+    const randomX = 20 + Math.random() * 60;
+    const randomY = 20 + Math.random() * 60;
+    
+    textElement.style.position = 'absolute'; // 👈 AÑADIR ESTO
+    textElement.style.left = randomX + '%';
+    textElement.style.top = randomY + '%';
+    textElement.style.transform = 'translate(-50%, -50%)';
+    textElement.style.fontSize = '24px';
+    textElement.style.color = '#ffffff';
+    textElement.style.fontFamily = 'Arial';
+    textElement.style.maxWidth = '300px';
+    textElement.style.zIndex = '10'; // 👈 AÑADIR ESTO
+    
+    textElement.textContent = text;
+    
+    const resizeHandle = document.createElement('div');
+    resizeHandle.className = 'resize-handle bottom-right';
+    textElement.appendChild(resizeHandle);
+    
+    // 👈 VERIFICAR QUE ESTE ELEMENTO EXISTA
+    const container = document.getElementById('imageContainer');
+    console.log('Container encontrado:', container); // 👈 AÑADIR ESTO PARA DEBUG
+    
+    if (container) {
+      container.appendChild(textElement);
+      console.log('Texto añadido al contenedor'); // 👈 AÑADIR ESTO PARA DEBUG
+    } else {
+      console.error('No se encontró el contenedor imageContainer'); // 👈 AÑADIR ESTO
+    }
+    
+    makeTextDraggable(textElement);
+    makeTextResizable(textElement);
+    
+    textElement.addEventListener('click', function(e) {
+      e.stopPropagation();
+      selectTextElement(this);
+    });
+    
+    return textElement;
+  }
+
+    // Función para hacer el texto arrastrable
+    function makeTextDraggable(element) {
+      let startX, startY, initialLeft, initialTop;
+      
+      element.addEventListener('mousedown', function(e) {
+        if (e.target.classList.contains('resize-handle')) {
+          return;
+        }
+        
+        e.preventDefault();
+        e.stopPropagation();
+        
+        isDragging = true;
+        
+        startX = e.clientX;
+        startY = e.clientY;
+        
+        const rect = element.getBoundingClientRect();
+        const imgRect = document.getElementById('resultImage').getBoundingClientRect();
+        
+        initialLeft = ((rect.left + rect.width / 2 - imgRect.left) / imgRect.width) * 100;
+        initialTop = ((rect.top + rect.height / 2 - imgRect.top) / imgRect.height) * 100;
+        
+        const onMouseMove = function(e) {
+          if (!isDragging) return;
+          
+          const deltaX = e.clientX - startX;
+          const deltaY = e.clientY - startY;
+          
+          const imgRect = document.getElementById('resultImage').getBoundingClientRect();
+          const deltaXPercent = (deltaX / imgRect.width) * 100;
+          const deltaYPercent = (deltaY / imgRect.height) * 100;
+          
+          const newLeft = initialLeft + deltaXPercent;
+          const newTop = initialTop + deltaYPercent;
+          
+          const clampedX = Math.max(5, Math.min(95, newLeft));
+          const clampedY = Math.max(5, Math.min(95, newTop));
+          
+          element.style.left = clampedX + '%';
+          element.style.top = clampedY + '%';
+        };
+        
+        const onMouseUp = function() {
+          isDragging = false;
+          document.removeEventListener('mousemove', onMouseMove);
+          document.removeEventListener('mouseup', onMouseUp);
+        };
+        
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+      });
+    }
+
+    // Función para hacer el texto redimensionable
+    function makeTextResizable(element) {
+      const handle = element.querySelector('.resize-handle');
+      
+      handle.addEventListener('mousedown', function(e) {
+        e.stopPropagation();
+        e.preventDefault();
+        
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const startFontSize = parseInt(window.getComputedStyle(element).fontSize);
+        const startMaxWidth = parseInt(window.getComputedStyle(element).maxWidth);
+        
+        const onMouseMove = function(e) {
+          const deltaX = e.clientX - startX;
+          const deltaY = e.clientY - startY;
+          const delta = Math.max(deltaX, deltaY);
+          
+          const newFontSize = Math.max(12, Math.min(100, startFontSize + delta / 3));
+          element.style.fontSize = newFontSize + 'px';
+          
+          const newMaxWidth = Math.max(100, Math.min(500, startMaxWidth + delta));
+          element.style.maxWidth = newMaxWidth + 'px';
+          
+          const shape = element.getAttribute('data-shape');
+          if (shape === 'arc') {
+            const arcRadius = parseInt(element.getAttribute('data-arc-radius')) || 30;
+            const arcDirection = element.getAttribute('data-arc-direction') || "up";
+            applyTextShape(element, 'arc', arcRadius, arcDirection);
+          }
+          
+          if (element === currentTextElement) {
+            document.getElementById('fontSize').value = newFontSize;
+            document.getElementById('sizeValue').textContent = Math.round(newFontSize);
+            document.getElementById('textWidth').value = newMaxWidth;
+            document.getElementById('widthValue').textContent = newMaxWidth;
+          }
+        };
+        
+        const onMouseUp = function() {
+          document.removeEventListener('mousemove', onMouseMove);
+          document.removeEventListener('mouseup', onMouseUp);
+        };
+        
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+      });
+    }
+
+    // Función para seleccionar elemento de texto
+    function selectTextElement(element) {
+      document.querySelectorAll('.text-overlay').forEach(el => {
+        el.classList.remove('selected');
+      });
+      
+      element.classList.add('selected');
+      currentTextElement = element;
+      
+      showTextEditor(element);
+      updateTextList();
+    }
+
+    // Función para mostrar editor de texto
+    function showTextEditor(element) {
+      const editor = document.getElementById('textEditor');
+      editor.style.display = 'block';
+      
+      document.getElementById('textContent').value = element.getAttribute('data-original-text') || element.textContent;
+      document.getElementById('fontSize').value = parseInt(element.style.fontSize) || 24;
+      document.getElementById('sizeValue').textContent = parseInt(element.style.fontSize) || 24;
+      document.getElementById('textColor').value = rgbToHex(element.style.color) || '#ffffff';
+      document.getElementById('fontFamily').value = element.style.fontFamily.replace(/['"]/g, '') || 'Arial';
+      document.getElementById('textWidth').value = parseInt(element.style.maxWidth) || 300;
+      document.getElementById('widthValue').textContent = parseInt(element.style.maxWidth) || 300;
+      
+      const shape = element.getAttribute('data-shape') || 'normal';
+      document.getElementById('textShape').value = shape;
+
+      const arcDirectionControls = document.getElementById('arcDirectionControls');
+
+      if (shape === 'arc') {
+        arcDirectionControls.style.display = 'block';
+        const arcDirection = element.getAttribute('data-arc-direction') || 'up';
+        document.getElementById('arcDirection').value = arcDirection;
+      } else {
+        arcDirectionControls.style.display = 'none';
+      }
+    }
+
+    // Función para convertir RGB a HEX
+    function rgbToHex(rgb) {
+      if (!rgb || rgb.indexOf('rgb') !== 0) return rgb;
+      
+      const values = rgb.match(/\d+/g);
+      if (!values || values.length < 3) return rgb;
+      
+      return '#' + values.slice(0, 3).map(x => {
+        const hex = parseInt(x).toString(16);
+        return hex.length === 1 ? '0' + hex : hex;
+      }).join('');
+    }
+
+    // ✅ FUNCIÓN CORREGIDA PARA APLICAR FORMA DE ARCO
+    function applyTextShape(element, shape, radius = 30, direction = "up") {
+      const originalText = element.getAttribute('data-original-text') || element.textContent;
+      element.setAttribute('data-shape', shape);
+      element.setAttribute('data-arc-radius', radius.toString());
+      element.setAttribute('data-arc-direction', direction);
+
+      if (shape === 'arc') {
+        element.innerHTML = '';
+
+        const arcContainer = document.createElement('div');
+        arcContainer.className = 'arc-container';
+
+        const fontSize = parseInt(element.style.fontSize) || 24;
+        const chars = originalText.split(""); 
+
+        const arcRadiusPixels = fontSize * (radius / 10);
+
+        arcContainer.style.position = 'relative';
+        arcContainer.style.width = (arcRadiusPixels * 2) + 'px';
+        arcContainer.style.height = (arcRadiusPixels * 2) + 'px';
+        arcContainer.style.margin = '0 auto';
+
+        const totalChars = chars.length;
+        const angleStep = 180 / Math.max(1, totalChars - 1);
+
+        chars.forEach((char, i) => {
+          const charSpan = document.createElement('span');
+          charSpan.textContent = char;
+          charSpan.style.position = 'absolute';
+          charSpan.style.left = '50%';
+          charSpan.style.top = '50%';
+          charSpan.style.fontSize = fontSize + 'px';
+          charSpan.style.fontFamily = element.style.fontFamily;
+          charSpan.style.color = element.style.color;
+          charSpan.style.fontWeight = 'bold';
+          charSpan.style.textShadow = '2px 2px 6px rgba(0,0,0,0.7)';
+          charSpan.style.whiteSpace = 'pre';
+
+          const angle = (i - (totalChars - 1) / 2) * angleStep;
+
+          if (direction === "up") {
+            // Arco hacia arriba
+            charSpan.style.transformOrigin = `center ${arcRadiusPixels}px`;
+            charSpan.style.transform = `rotate(${angle}deg) translateY(-${arcRadiusPixels}px)`;
+          } else {
+            // Arco hacia abajo - CLAVE: cambiar transform-origin para que rote desde arriba
+            charSpan.style.transformOrigin = `center -${arcRadiusPixels}px`;
+            charSpan.style.transform = `rotate(${angle}deg) translateY(${arcRadiusPixels}px)`;
+          }
+
+          arcContainer.appendChild(charSpan);
         });
 
-        const result = await response.json();
-        console.log("📦 Resultado del servidor:", result);
+        element.appendChild(arcContainer);
 
-        const img = document.getElementById("resultImage");
-        const raw = result.output?.[0];
-        const imageUrl = typeof raw === "string" ? raw : raw?.url;
+        const resizeHandle = document.createElement('div');
+        resizeHandle.className = 'resize-handle bottom-right';
+        element.appendChild(resizeHandle);
 
-        if (imageUrl) {
-          img.src = imageUrl;
-          img.style.display = "block";
-          currentImage = imageUrl;
-          
-          // Mostrar controles de texto
-          document.getElementById("textControls").style.display = "block";
-          document.getElementById("textOverlay").style.display = "block";
-        } else {
-          alert("No se pudo obtener una URL válida de imagen.");
-          img.style.display = "none";
-        }
-      } catch (error) {
-        console.error("Error al generar imagen:", error);
-        alert("Error al contactar con el servidor.");
-      }
-    });
+        makeTextResizable(element);
 
-    // Controles de texto
-    const textOverlay = document.getElementById("textOverlay");
-    const textContent = document.getElementById("textContent");
-    const fontSize = document.getElementById("fontSize");
-    const textColor = document.getElementById("textColor");
-    const positionX = document.getElementById("positionX");
-    const positionY = document.getElementById("positionY");
-    const textWidth = document.getElementById("textWidth");
-
-    // Función para formatear texto con salto de línea automático
-    function formatTextWithLineBreaks(text, maxWidth, fontSize, canvas = null) {
-      if (!text) return "Texto de ejemplo";
-      
-      const words = text.split(' ');
-      const lines = [];
-      let currentLine = '';
-      
-      // Crear contexto temporal para medir texto
-      const tempCanvas = canvas || document.createElement('canvas');
-      const ctx = tempCanvas.getContext('2d');
-      ctx.font = `bold ${fontSize}px Arial`;
-      
-      // Calcular ancho máximo en píxeles
-      const containerWidth = document.getElementById("imageContainer").offsetWidth;
-      const maxWidthPx = (maxWidth / 100) * containerWidth;
-      
-      for (let word of words) {
-        const testLine = currentLine ? currentLine + ' ' + word : word;
-        const metrics = ctx.measureText(testLine);
-        
-        if (metrics.width > maxWidthPx && currentLine !== '') {
-          lines.push(currentLine);
-          currentLine = word;
-        } else {
-          currentLine = testLine;
-        }
-      }
-      
-      if (currentLine) {
-        lines.push(currentLine);
-      }
-      
-      return lines.join('\n');
-    }
-
-    // Función para actualizar el texto formateado
-    function updateFormattedText() {
-      const text = textContent.value;
-      const size = parseInt(fontSize.value);
-      const width = parseInt(textWidth.value);
-      
-      if (text) {
-        const formattedText = formatTextWithLineBreaks(text, width, size);
-        textOverlay.textContent = formattedText;
       } else {
-        textOverlay.textContent = "Texto de ejemplo";
+        element.innerHTML = '';
+        element.textContent = originalText;
+
+        const resizeHandle = document.createElement('div');
+        resizeHandle.className = 'resize-handle bottom-right';
+        element.appendChild(resizeHandle);
+
+        makeTextResizable(element);
       }
     }
 
-    // Actualizar texto
-    textContent.addEventListener("input", updateFormattedText);
+    // Función para actualizar lista de textos
+    function updateTextList() {
+      const textList = document.getElementById('textList');
+      textList.innerHTML = '';
+      
+      document.querySelectorAll('.text-overlay').forEach((element, index) => {
+        const textItem = document.createElement('div');
+        textItem.className = 'text-item';
+        if (element === currentTextElement) {
+          textItem.classList.add('active');
+        }
+        
+        const textPreview = (element.getAttribute('data-original-text') || element.textContent).substring(0, 20);
+        textItem.innerHTML = `
+          <span>Texto ${index + 1}: ${textPreview}${textPreview.length >= 20 ? '...' : ''}</span>
+          <button class="delete-btn">🗑️</button>
+        `;
+        
+        // Manejar clic en el botón eliminar
+        const deleteBtn = textItem.querySelector('.delete-btn');
+        deleteBtn.addEventListener('click', function(e) {
+          e.stopPropagation(); // evita que se dispare selectTextElement
+          deleteTextElement(element.id);
+        });
 
-    // Actualizar ancho máximo
-    textWidth.addEventListener("input", function() {
-      textOverlay.style.maxWidth = this.value + "%";
-      document.getElementById("widthValue").textContent = this.value;
-      updateFormattedText();
+        // Manejar clic en el item (selección de texto)
+        textItem.addEventListener('click', function() {
+          selectTextElement(element);
+        });
+        
+        textList.appendChild(textItem);
+      });
+    }
+
+
+    // Función para eliminar elemento de texto
+    function deleteTextElement(elementId) {
+      const element = document.getElementById(elementId);
+      if (element) {
+        element.remove();
+        if (currentTextElement === element) {
+          currentTextElement = null;
+          document.getElementById('textEditor').style.display = 'none';
+        }
+        updateTextList();
+      }
+    }
+
+    // Event Listeners
+    document.getElementById('addTextBtn').addEventListener('click', function() {
+      const newText = createTextElement();
+      selectTextElement(newText);
     });
 
-    // Actualizar tamaño
-    fontSize.addEventListener("input", function() {
-      textOverlay.style.fontSize = this.value + "px";
-      document.getElementById("sizeValue").textContent = this.value;
-      updateFormattedText();
-    });
-
-    // Actualizar color
-    textColor.addEventListener("input", function() {
-      textOverlay.style.color = this.value;
-    });
-
-    // Actualizar posición X
-    positionX.addEventListener("input", function() {
-      textOverlay.style.left = this.value + "%";
-      textOverlay.style.transform = `translate(-50%, -50%)`;
-      document.getElementById("xValue").textContent = this.value;
-    });
-
-    // Actualizar posición Y
-    positionY.addEventListener("input", function() {
-      textOverlay.style.top = this.value + "%";
-      textOverlay.style.transform = `translate(-50%, -50%)`;
-      document.getElementById("yValue").textContent = this.value;
-    });
-
-    // Arrastrar texto con mouse
-    textOverlay.addEventListener("mousedown", function(e) {
-      isDragging = true;
-      e.preventDefault();
-    });
-
-    document.addEventListener("mousemove", function(e) {
-      if (isDragging) {
-        const container = document.getElementById("imageContainer");
-        const rect = container.getBoundingClientRect();
-        
-        const x = ((e.clientX - rect.left) / rect.width) * 100;
-        const y = ((e.clientY - rect.top) / rect.height) * 100;
-        
-        // Limitar movimiento considerando el ancho del texto
-        const textWidthPercent = parseInt(textWidth.value);
-        const minX = textWidthPercent / 2;
-        const maxX = 100 - (textWidthPercent / 2);
-        
-        const clampedX = Math.max(minX, Math.min(maxX, x));
-        const clampedY = Math.max(10, Math.min(90, y));
-        
-        positionX.value = clampedX;
-        positionY.value = clampedY;
-        
-        textOverlay.style.left = clampedX + "%";
-        textOverlay.style.top = clampedY + "%";
-        
-        document.getElementById("xValue").textContent = Math.round(clampedX);
-        document.getElementById("yValue").textContent = Math.round(clampedY);
+    document.getElementById('textContent').addEventListener('input', function() {
+      if (currentTextElement) {
+        currentTextElement.setAttribute('data-original-text', this.value);
+        const shape = currentTextElement.getAttribute('data-shape') || 'normal';
+        const arcRadius = parseInt(currentTextElement.getAttribute('data-arc-radius')) || 30;
+        const arcDirection = currentTextElement.getAttribute('data-arc-direction') || "up";
+        applyTextShape(currentTextElement, shape, arcRadius, arcDirection);
+        updateTextList();
       }
     });
 
-    document.addEventListener("mouseup", function() {
-      isDragging = false;
-    });
-
-    // Función de descarga
-    document.getElementById("downloadBtn").addEventListener("click", function() {
-      if (!currentImage) return;
-
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
-      const img = new Image();
-
-      img.crossOrigin = "anonymous";
-      img.onload = function() {
-        canvas.width = img.width;
-        canvas.height = img.height;
+    document.getElementById('fontSize').addEventListener('input', function() {
+      if (currentTextElement) {
+        currentTextElement.style.fontSize = this.value + 'px';
+        document.getElementById('sizeValue').textContent = this.value;
         
-        // Dibujar imagen
-        ctx.drawImage(img, 0, 0);
-        
-        // Dibujar texto si hay contenido
-        const text = textContent.value;
-        if (text) {
-          const size = parseInt(fontSize.value);
-          const color = textColor.value;
-          const width = parseInt(textWidth.value);
-          const x = (parseInt(positionX.value) / 100) * canvas.width;
-          const y = (parseInt(positionY.value) / 100) * canvas.height;
-          
-          // Configurar estilos de texto
-          const scaledSize = size * (canvas.width / 512);
-          ctx.font = `bold ${scaledSize}px Arial`;
-          ctx.fillStyle = color;
-          ctx.strokeStyle = "rgba(0,0,0,0.7)";
-          ctx.lineWidth = 3;
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          
-          // Formatear texto con saltos de línea
-          const maxWidthPx = (width / 100) * canvas.width;
-          const formattedText = formatTextWithLineBreaks(text, width, scaledSize, canvas);
-          const lines = formattedText.split('\n');
-          
-          // Dibujar cada línea
-          const lineHeight = scaledSize * 1.2;
-          const totalHeight = lines.length * lineHeight;
-          const startY = y - (totalHeight / 2) + (lineHeight / 2);
-          
-          lines.forEach((line, index) => {
-            const lineY = startY + (index * lineHeight);
-            ctx.strokeText(line, x, lineY);
-            ctx.fillText(line, x, lineY);
-          });
+        const shape = currentTextElement.getAttribute('data-shape') || 'normal';
+        if (shape === 'arc') {
+          const arcRadius = parseInt(currentTextElement.getAttribute('data-arc-radius')) || 30;
+          const arcDirection = currentTextElement.getAttribute('data-arc-direction') || "up";
+          applyTextShape(currentTextElement, shape, arcRadius, arcDirection);
         }
-        
-        // Descargar
-        const link = document.createElement("a");
-        link.download = "imagen_con_texto.png";
-        link.href = canvas.toDataURL();
-        link.click();
-      };
-      
-      img.src = currentImage;
+      }
     });
 
-    // Inicializar posición del texto
-    textOverlay.style.transform = "translate(-50%, -50%)";
-    textOverlay.style.left = "50%";
-    textOverlay.style.top = "50%";
-    textOverlay.style.maxWidth = "80%";
-    
-    // Inicializar texto formateado
-    setTimeout(updateFormattedText, 100);
+    document.getElementById('textColor').addEventListener('input', function() {
+      if (currentTextElement) {
+        currentTextElement.style.color = this.value;
+        
+        const shape = currentTextElement.getAttribute('data-shape') || 'normal';
+        if (shape === 'arc') {
+          const arcRadius = parseInt(currentTextElement.getAttribute('data-arc-radius')) || 30;
+          const arcDirection = currentTextElement.getAttribute('data-arc-direction') || "up";
+          applyTextShape(currentTextElement, shape, arcRadius, arcDirection);
+        }
+      }
+    });
+
+    document.getElementById('fontFamily').addEventListener('change', function() {
+      if (currentTextElement) {
+        currentTextElement.style.fontFamily = this.value;
+        
+        const shape = currentTextElement.getAttribute('data-shape') || 'normal';
+        if (shape === 'arc') {
+          const arcRadius = parseInt(currentTextElement.getAttribute('data-arc-radius')) || 30;
+          const arcDirection = currentTextElement.getAttribute('data-arc-direction') || "up";
+          applyTextShape(currentTextElement, shape, arcRadius, arcDirection);
+        }
+      }
+    });
+
+    document.getElementById('textWidth').addEventListener('input', function() {
+      if (currentTextElement) {
+        currentTextElement.style.maxWidth = this.value + 'px';
+        document.getElementById('widthValue').textContent = this.value;
+      }
+    });
+
+    document.getElementById('confirmBtn').addEventListener('click', function() {
+      document.getElementById('textEditor').style.display = 'none';
+      if (currentTextElement) {
+        currentTextElement.classList.remove('selected');
+      }
+      currentTextElement = null;
+    });
+
+    // Click fuera para deseleccionar
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.text-overlay') && !e.target.closest('#textEditor') && !e.target.closest('#textList')) {
+        document.querySelectorAll('.text-overlay').forEach(el => {
+          el.classList.remove('selected');
+        });
+        document.getElementById('textEditor').style.display = 'none';
+        currentTextElement = null;
+      }
+    });
+
+    // Generar URL
+   document.getElementById("generateUrlBtn").addEventListener("click", function () {
+    if (!currentImage) {
+      alert("Primero genera una imagen.");
+      return;
+    }
+
+    const element = document.getElementById("imageContainer");
+
+    html2canvas(element, {
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: null,
+      scale: 2
+    }).then(canvas => {
+      const finalImage = canvas.toDataURL("image/png");
+
+      fetch("http://localhost:3000/api/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageBase64: finalImage })
+      })
+        .then(res => res.json())
+        .then(async data => {
+          if (data.url) {
+            const uniqueId = Date.now();
+            const imageUrl = encodeURIComponent(data.url);
+
+            // 👇 Usuario fijo por ahora (más adelante lo pasamos dinámico)
+            const usuarioId = "1e077a1e-3461-4d65-acf3-470be2e099a9";
+
+            // ✅ Construir URL final con usuarioId incluido
+            const url = `http://localhost:3000/vizualizacion_tarejta.html?id=${uniqueId}&img=${imageUrl}&usuarioId=${usuarioId}`;
+
+            // ✅ Mostrar enlace en pantalla
+            let urlElement = document.getElementById("generatedUrl");
+            urlElement.innerHTML = `🎉 Tu invitación está disponible en: 
+              <a href="${url}" target="_blank">${url}</a>`;
+            urlElement.style.display = "block";
+
+            navigator.clipboard.writeText(url);
+
+            // ✅ Guardar en Firestore → colección TarjetasInvitacion
+            const invitacionRef = doc(collection(db, "TarjetasInvitacion")); // id automático
+
+            await setDoc(invitacionRef, {
+              usuarioId: usuarioId,
+              url: url,
+              fecha: new Date().toISOString()
+            });
+
+            console.log("✅ Invitación guardada en TarjetasInvitacion con usuarioId");
+          } else {
+            alert("❌ Error al subir a Cloudinary");
+          }
+        });
+    });
+  });
+
+
+
+
+
+  
+
   </script>
 </body>
 </html>

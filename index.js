@@ -4,6 +4,9 @@ import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import { Client } from "@gradio/client";
+import fs from "fs/promises"; 
+import { v2 as cloudinary } from "cloudinary";
+
 
 dotenv.config();
 
@@ -16,6 +19,17 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json({ limit: "20mb" }));
 app.use(express.static(__dirname)); // Para servir archivos como el HTML
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+// Crear directorio para guardar invitaciones si no existe
+const INVITATIONS_DIR = './invitations';
+fs.mkdir(INVITATIONS_DIR, { recursive: true }).catch(console.error);
+
 
 // 🔧 Función profesional para mejorar prompts - SIEMPRE mejora cualquier prompt
 function mejorarPrompt(promptUsuario) {
@@ -167,6 +181,33 @@ app.post("/api/generate", async (req, res) => {
     res.status(500).json({ error: "No se pudo generar imagen desde HF Space" });
   }
 });
+
+
+// 📤 Endpoint para subir una imagen a Cloudinary
+app.post("/api/upload", async (req, res) => {
+  try {
+    const { imageBase64 } = req.body; // viene desde html2canvas
+    if (!imageBase64) {
+      return res.status(400).json({ error: "Falta la imagen" });
+    }
+
+    // Subir la imagen en base64 a Cloudinary
+    const uploadResponse = await cloudinary.uploader.upload(imageBase64, {
+      folder: "invitaciones", // opcional: carpeta en Cloudinary
+      resource_type: "image"
+    });
+
+    console.log("✅ Imagen subida a Cloudinary:", uploadResponse.secure_url);
+
+    res.json({ url: uploadResponse.secure_url });
+
+  } catch (error) {
+    console.error("❌ Error al subir a Cloudinary:", error);
+    res.status(500).json({ error: "No se pudo subir la imagen a Cloudinary" });
+  }
+});
+
+
 
 app.listen(PORT, () => {
   console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
