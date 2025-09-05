@@ -400,10 +400,12 @@
       </div>
 
       <!-- Botón de enlace -->
-      <button type="button" id="generateUrlBtn" class="download-btn">
-        ✨ Generar enlace de tu tarjeta
+      <div id="generatedUrlContainer" style="margin-top:15px; display:none; font-weight:bold; color:#007bff; display:flex; align-items:center;">
+      <input type="text" id="generatedUrlInput" readonly style="flex:1; padding:8px; border:1px solid #007bff; border-radius:4px;" />
+      <button id="copyUrlBtn" style="margin-left:8px; padding:8px; border:none; background-color:#007bff; color:white; border-radius:4px; cursor:pointer;">
+        📋 Copiar
       </button>
-      <p id="generatedUrl" style="margin-top:15px; font-weight:bold; color:#007bff; display:none;"></p>
+    </div>
 
 
     </div>
@@ -974,72 +976,81 @@ document.getElementById("generateForm").addEventListener("submit", async functio
 
     // Generar URL
    document.getElementById("generateUrlBtn").addEventListener("click", async function () {
-  if (!currentImage) {
-    alert("Primero genera una imagen.");
-    return;
-  }
-
-  const element = document.getElementById("imageContainer");
-
-  const canvas = await html2canvas(element, {
-    useCORS: true,
-    allowTaint: true,
-    backgroundColor: null,
-    scale: 2
-  });
-
-  const finalImage = canvas.toDataURL("image/png");
-
-  // 🔹 Obtener la base de la URL del servidor dinámicamente
-  const serverBaseURL = window.location.origin; // Esto usa el dominio actual (Render o localhost)
-  const uploadEndpoint = `${serverBaseURL}/api/upload`;
-  
-  try {
-    const res = await fetch(uploadEndpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ imageBase64: finalImage })
-    });
-
-    const data = await res.json();
-
-    if (!data.url) {
-      alert("❌ Error al subir la imagen");
+    if (!currentImage) {
+      alert("Primero genera una imagen.");
       return;
     }
 
-    const uniqueId = Date.now();
-    const imageUrl = encodeURIComponent(data.url);
+    const element = document.getElementById("imageContainer");
 
-    // 🔹 UsuarioId dinámico (puede venir de URL o sesión)
-    const params = new URLSearchParams(window.location.search);
-    const usuarioId = params.get("usuarioId") || "usuario-desconocido";
-
-    // Construir URL final apuntando al servidor real
-    const url = `${serverBaseURL}/vizualizacion_tarejta.html?id=${uniqueId}&img=${imageUrl}&usuarioId=${usuarioId}`;
-
-    // Mostrar enlace en pantalla
-    const urlElement = document.getElementById("generatedUrl");
-    urlElement.innerHTML = `🎉 Tu invitación está disponible en: 
-      <a href="${url}" target="_blank">${url}</a>`;
-    urlElement.style.display = "block";
-
-    navigator.clipboard.writeText(url);
-
-    // Guardar en Firestore → colección TarjetasInvitacion
-    const invitacionRef = doc(collection(db, "TarjetasInvitacion")); // id automático
-    await setDoc(invitacionRef, {
-      usuarioId: usuarioId,
-      url: url,
-      fecha: new Date().toISOString()
+    const canvas = await html2canvas(element, {
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: null,
+      scale: 2
     });
 
-    console.log("✅ Invitación guardada en TarjetasInvitacion con usuarioId");
+    const finalImage = canvas.toDataURL("image/png");
 
-  } catch (error) {
-    console.error("❌ Error al subir la imagen o guardar en Firestore:", error);
-  }
-});
+    // 🔹 URL base del servidor dinámico
+    const serverBaseURL = window.location.origin;
+    const uploadEndpoint = `${serverBaseURL}/api/upload`;
+
+    try {
+      const res = await fetch(uploadEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageBase64: finalImage })
+      });
+
+      const data = await res.json();
+
+      if (!data.url) {
+        alert("❌ Error al subir la imagen");
+        return;
+      }
+
+      const uniqueId = Date.now();
+      const imageUrl = encodeURIComponent(data.url);
+
+      // 🔹 UsuarioId dinámico desde la URL
+      const params = new URLSearchParams(window.location.search);
+      const usuarioId = params.get("usuarioId") || "usuario-desconocido";
+
+      // URL final
+      const url = `${serverBaseURL}/vizualizacion_tarejta.html?id=${uniqueId}&img=${imageUrl}&usuarioId=${usuarioId}`;
+
+      // 🔹 Mostrar URL en un input con botón de copiar
+      const urlContainer = document.getElementById("generatedUrlContainer");
+      const urlInput = document.getElementById("generatedUrlInput");
+      urlInput.value = url;
+      urlContainer.style.display = "flex";
+
+      // Botón copiar
+      const copyBtn = document.getElementById("copyUrlBtn");
+      copyBtn.onclick = () => {
+        urlInput.select();
+        urlInput.setSelectionRange(0, 99999); // Para móviles
+        navigator.clipboard.writeText(urlInput.value);
+        copyBtn.textContent = "✅ Copiado";
+        setTimeout(() => { copyBtn.textContent = "📋 Copiar"; }, 2000);
+      };
+
+      // Guardar en Firestore → colección TarjetasInvitacion
+      const invitacionRef = doc(collection(db, "TarjetasInvitacion"));
+      await setDoc(invitacionRef, {
+        usuarioId: usuarioId,
+        url: url,
+        fecha: new Date().toISOString()
+      });
+
+      console.log("✅ Invitación guardada en TarjetasInvitacion con usuarioId");
+
+    } catch (error) {
+      console.error("❌ Error al subir la imagen o guardar en Firestore:", error);
+    }
+  });
+
 
 
 
