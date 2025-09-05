@@ -973,63 +973,73 @@ document.getElementById("generateForm").addEventListener("submit", async functio
     });
 
     // Generar URL
-   document.getElementById("generateUrlBtn").addEventListener("click", function () {
-    if (!currentImage) {
-      alert("Primero genera una imagen.");
+   document.getElementById("generateUrlBtn").addEventListener("click", async function () {
+  if (!currentImage) {
+    alert("Primero genera una imagen.");
+    return;
+  }
+
+  const element = document.getElementById("imageContainer");
+
+  const canvas = await html2canvas(element, {
+    useCORS: true,
+    allowTaint: true,
+    backgroundColor: null,
+    scale: 2
+  });
+
+  const finalImage = canvas.toDataURL("image/png");
+
+  // 🔹 Obtener la base de la URL del servidor dinámicamente
+  const serverBaseURL = window.location.origin; // Esto usa el dominio actual (Render o localhost)
+  const uploadEndpoint = `${serverBaseURL}/api/upload`;
+  
+  try {
+    const res = await fetch(uploadEndpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ imageBase64: finalImage })
+    });
+
+    const data = await res.json();
+
+    if (!data.url) {
+      alert("❌ Error al subir la imagen");
       return;
     }
 
-    const element = document.getElementById("imageContainer");
+    const uniqueId = Date.now();
+    const imageUrl = encodeURIComponent(data.url);
 
-    html2canvas(element, {
-      useCORS: true,
-      allowTaint: true,
-      backgroundColor: null,
-      scale: 2
-    }).then(canvas => {
-      const finalImage = canvas.toDataURL("image/png");
+    // 🔹 UsuarioId dinámico (puede venir de URL o sesión)
+    const params = new URLSearchParams(window.location.search);
+    const usuarioId = params.get("usuarioId") || "usuario-desconocido";
 
-      fetch("http://localhost:3000/api/upload", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageBase64: finalImage })
-      })
-        .then(res => res.json())
-        .then(async data => {
-          if (data.url) {
-            const uniqueId = Date.now();
-            const imageUrl = encodeURIComponent(data.url);
+    // Construir URL final apuntando al servidor real
+    const url = `${serverBaseURL}/vizualizacion_tarejta.html?id=${uniqueId}&img=${imageUrl}&usuarioId=${usuarioId}`;
 
-            // 👇 Usuario fijo por ahora (más adelante lo pasamos dinámico)
-            const usuarioId = "1e077a1e-3461-4d65-acf3-470be2e099a9";
+    // Mostrar enlace en pantalla
+    const urlElement = document.getElementById("generatedUrl");
+    urlElement.innerHTML = `🎉 Tu invitación está disponible en: 
+      <a href="${url}" target="_blank">${url}</a>`;
+    urlElement.style.display = "block";
 
-            // ✅ Construir URL final con usuarioId incluido
-            const url = `http://localhost:3000/vizualizacion_tarejta.html?id=${uniqueId}&img=${imageUrl}&usuarioId=${usuarioId}`;
+    navigator.clipboard.writeText(url);
 
-            // ✅ Mostrar enlace en pantalla
-            let urlElement = document.getElementById("generatedUrl");
-            urlElement.innerHTML = `🎉 Tu invitación está disponible en: 
-              <a href="${url}" target="_blank">${url}</a>`;
-            urlElement.style.display = "block";
-
-            navigator.clipboard.writeText(url);
-
-            // ✅ Guardar en Firestore → colección TarjetasInvitacion
-            const invitacionRef = doc(collection(db, "TarjetasInvitacion")); // id automático
-
-            await setDoc(invitacionRef, {
-              usuarioId: usuarioId,
-              url: url,
-              fecha: new Date().toISOString()
-            });
-
-            console.log("✅ Invitación guardada en TarjetasInvitacion con usuarioId");
-          } else {
-            alert("❌ Error al subir a Cloudinary");
-          }
-        });
+    // Guardar en Firestore → colección TarjetasInvitacion
+    const invitacionRef = doc(collection(db, "TarjetasInvitacion")); // id automático
+    await setDoc(invitacionRef, {
+      usuarioId: usuarioId,
+      url: url,
+      fecha: new Date().toISOString()
     });
-  });
+
+    console.log("✅ Invitación guardada en TarjetasInvitacion con usuarioId");
+
+  } catch (error) {
+    console.error("❌ Error al subir la imagen o guardar en Firestore:", error);
+  }
+});
 
 
 
