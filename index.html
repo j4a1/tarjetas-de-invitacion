@@ -288,6 +288,70 @@
       font-size: 20px;
     }
   }
+
+    #generatedUrlContainer {
+    margin-top: 15px;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    max-width: 100%;
+  }
+
+  #generatedUrlInput {
+    flex: 1;
+    min-width: 200px;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    color: #333;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: text;
+  }
+
+  #copyUrlBtn {
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #copyUrlBtn img {
+    width: 24px;
+    height: 24px;
+    display: block;
+  }
+
+  #copyUrlBtn:hover img {
+    filter: brightness(0.8);
+  }
+
+  #copyAnimation {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    animation: fadeInOut 10s forwards;
+  }
+
+  #copyAnimation img {
+    width: 64px;
+    height: 64px;
+  }
+
+  @keyframes fadeInOut {
+    0% { opacity: 0; transform: scale(0.5); }
+    10% { opacity: 1; transform: scale(1); }
+    90% { opacity: 1; transform: scale(1); }
+    100% { opacity: 0; transform: scale(0.5); }
+  }
+
+
 </style>
 
 </head>
@@ -400,12 +464,33 @@
       </div>
 
       <!-- Botón de enlace -->
-      <div id="generatedUrlContainer" style="margin-top:15px; display:none; font-weight:bold; color:#007bff; display:flex; align-items:center;">
-      <input type="text" id="generatedUrlInput" readonly style="flex:1; padding:8px; border:1px solid #007bff; border-radius:4px;" />
-      <button id="copyUrlBtn" style="margin-left:8px; padding:8px; border:none; background-color:#007bff; color:white; border-radius:4px; cursor:pointer;">
-        📋 Copiar
+      <button type="button" id="generateUrlBtn" class="download-btn">
+        ✨ Comparte tu tarjeta
       </button>
-    </div>
+
+
+      <!-- Contenedor del enlace generado -->
+      <div id="generatedUrlContainer" style="margin-top:15px; display:none; align-items:center; gap:8px; max-width:100%;">
+        <input type="text" id="generatedUrlInput" readonly 
+              style="flex:1; min-width:200px; padding:8px; border:1px solid #ccc; border-radius:4px; font-size:14px; color:#333; 
+                    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" />
+        <button id="copyUrlBtn" style="border:none; background:none; cursor:pointer;">
+          <img src="https://img.icons8.com/material-outlined/24/000000/copy.png" alt="Copiar" />
+        </button>
+      </div>
+
+      <!-- Mensaje animado de confirmación -->
+      <div id="copyAnimation" style="display:none; position:relative; margin-top:20px; text-align:center;">
+        <img id="checkIcon" src="https://img.icons8.com/material-outlined/64/00ff00/checkmark.png" alt="Copiado" />
+        <p id="copyMessage" style="margin-top:10px; font-size:16px; color:#ff5722;">
+          Es hora de completar tu evento. Regresa a la aplicación y guarda esta URL, ya que es el boleto de entrada de tus invitados.
+        </p>
+      </div>
+
+
+
+
+
 
 
     </div>
@@ -502,7 +587,7 @@
       }
     });
 
-    // Generar imagen
+    /* 
     document.getElementById("generateForm").addEventListener("submit", function (e) {
       e.preventDefault(); 
 
@@ -515,50 +600,47 @@
 
       // Mostrar controles de texto
       document.getElementById("textControls").style.display = "block";
-    });
+    });*/
 
 
 
-/* 
-// ===============================
-// ⚠️ LÓGICA ORIGINAL CON BACKEND (descomentar si quieres volver a usar IA)
-// ===============================
 
-document.getElementById("generateForm").addEventListener("submit", async function (e) {
-  e.preventDefault();
 
-  const prompt = document.getElementById("promptInput").value.trim();
-  if (!prompt) return;
+  document.getElementById("generateForm").addEventListener("submit", async function (e) {
+    e.preventDefault();
 
-  try {
-    const response = await fetch("/api/generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt }),
-    });
+    const prompt = document.getElementById("promptInput").value.trim();
+    if (!prompt) return;
 
-    const result = await response.json();
-    console.log("📦 Resultado del servidor:", result);
+    try {
+      const response = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt }),
+      });
 
-    const img = document.getElementById("resultImage");
-    const raw = result.output?.[0];
-    const imageUrl = typeof raw === "string" ? raw : raw?.url;
+      const result = await response.json();
+      console.log("📦 Resultado del servidor:", result);
 
-    if (imageUrl) {
-      img.src = imageUrl;
-      img.style.display = "block";
-      currentImage = imageUrl;
-      document.getElementById("textControls").style.display = "block";
-    } else {
-      alert("No se pudo obtener una URL válida de imagen.");
-      img.style.display = "none";
+      const img = document.getElementById("resultImage");
+      const raw = result.output?.[0];
+      const imageUrl = typeof raw === "string" ? raw : raw?.url;
+
+      if (imageUrl) {
+        img.src = imageUrl;
+        img.style.display = "block";
+        currentImage = imageUrl;
+        document.getElementById("textControls").style.display = "block";
+      } else {
+        alert("No se pudo obtener una URL válida de imagen.");
+        img.style.display = "none";
+      }
+    } catch (error) {
+      console.error("Error al generar imagen:", error);
+      alert("Error al contactar con el servidor.");
     }
-  } catch (error) {
-    console.error("Error al generar imagen:", error);
-    alert("Error al contactar con el servidor.");
-  }
-});
-*/
+  });
+
 
 
     // Función para crear elemento de texto
@@ -616,105 +698,146 @@ document.getElementById("generateForm").addEventListener("submit", async functio
     // Función para hacer el texto arrastrable
     function makeTextDraggable(element) {
       let startX, startY, initialLeft, initialTop;
-      
-      element.addEventListener('mousedown', function(e) {
-        if (e.target.classList.contains('resize-handle')) {
-          return;
-        }
-        
-        e.preventDefault();
-        e.stopPropagation();
-        
+
+      function startDrag(x, y) {
         isDragging = true;
-        
-        startX = e.clientX;
-        startY = e.clientY;
-        
+        startX = x;
+        startY = y;
+
         const rect = element.getBoundingClientRect();
         const imgRect = document.getElementById('resultImage').getBoundingClientRect();
-        
+
         initialLeft = ((rect.left + rect.width / 2 - imgRect.left) / imgRect.width) * 100;
         initialTop = ((rect.top + rect.height / 2 - imgRect.top) / imgRect.height) * 100;
-        
-        const onMouseMove = function(e) {
-          if (!isDragging) return;
-          
-          const deltaX = e.clientX - startX;
-          const deltaY = e.clientY - startY;
-          
-          const imgRect = document.getElementById('resultImage').getBoundingClientRect();
-          const deltaXPercent = (deltaX / imgRect.width) * 100;
-          const deltaYPercent = (deltaY / imgRect.height) * 100;
-          
-          const newLeft = initialLeft + deltaXPercent;
-          const newTop = initialTop + deltaYPercent;
-          
-          const clampedX = Math.max(5, Math.min(95, newLeft));
-          const clampedY = Math.max(5, Math.min(95, newTop));
-          
-          element.style.left = clampedX + '%';
-          element.style.top = clampedY + '%';
-        };
-        
-        const onMouseUp = function() {
-          isDragging = false;
-          document.removeEventListener('mousemove', onMouseMove);
-          document.removeEventListener('mouseup', onMouseUp);
-        };
-        
+      }
+
+      function doDrag(x, y) {
+        if (!isDragging) return;
+
+        const deltaX = x - startX;
+        const deltaY = y - startY;
+
+        const imgRect = document.getElementById('resultImage').getBoundingClientRect();
+        const deltaXPercent = (deltaX / imgRect.width) * 100;
+        const deltaYPercent = (deltaY / imgRect.height) * 100;
+
+        const newLeft = initialLeft + deltaXPercent;
+        const newTop = initialTop + deltaYPercent;
+
+        element.style.left = Math.max(5, Math.min(95, newLeft)) + '%';
+        element.style.top = Math.max(5, Math.min(95, newTop)) + '%';
+      }
+
+      function stopDrag() {
+        isDragging = false;
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+        document.removeEventListener('touchmove', onTouchMove);
+        document.removeEventListener('touchend', onTouchEnd);
+      }
+
+      function onMouseMove(e) { doDrag(e.clientX, e.clientY); }
+      function onMouseUp() { stopDrag(); }
+      function onTouchMove(e) {
+        e.preventDefault(); // 👈 evita que la pantalla haga scroll
+        const touch = e.touches[0];
+        doDrag(touch.clientX, touch.clientY);
+      }
+      function onTouchEnd() { stopDrag(); }
+
+      element.addEventListener('mousedown', function(e) {
+        if (e.target.classList.contains('resize-handle')) return;
+        e.preventDefault();
+        startDrag(e.clientX, e.clientY);
         document.addEventListener('mousemove', onMouseMove);
         document.addEventListener('mouseup', onMouseUp);
       });
+
+      element.addEventListener('touchstart', function(e) {
+        if (e.target.classList.contains('resize-handle')) return;
+        const touch = e.touches[0];
+        startDrag(touch.clientX, touch.clientY);
+        document.addEventListener('touchmove', onTouchMove, { passive: false }); // 👈 aquí
+        document.addEventListener('touchend', onTouchEnd);
+      });
     }
+
+
 
     // Función para hacer el texto redimensionable
     function makeTextResizable(element) {
       const handle = element.querySelector('.resize-handle');
-      
-      handle.addEventListener('mousedown', function(e) {
-        e.stopPropagation();
-        e.preventDefault();
-        
-        const startX = e.clientX;
-        const startY = e.clientY;
+
+      function startResize(x, y) {
+        const startX = x;
+        const startY = y;
         const startFontSize = parseInt(window.getComputedStyle(element).fontSize);
         const startMaxWidth = parseInt(window.getComputedStyle(element).maxWidth);
-        
-        const onMouseMove = function(e) {
-          const deltaX = e.clientX - startX;
-          const deltaY = e.clientY - startY;
+
+        function doResize(x, y) {
+          const deltaX = x - startX;
+          const deltaY = y - startY;
           const delta = Math.max(deltaX, deltaY);
-          
+
           const newFontSize = Math.max(12, Math.min(100, startFontSize + delta / 3));
           element.style.fontSize = newFontSize + 'px';
-          
+
           const newMaxWidth = Math.max(100, Math.min(500, startMaxWidth + delta));
           element.style.maxWidth = newMaxWidth + 'px';
-          
+
           const shape = element.getAttribute('data-shape');
           if (shape === 'arc') {
             const arcRadius = parseInt(element.getAttribute('data-arc-radius')) || 30;
             const arcDirection = element.getAttribute('data-arc-direction') || "up";
             applyTextShape(element, 'arc', arcRadius, arcDirection);
           }
-          
+
           if (element === currentTextElement) {
             document.getElementById('fontSize').value = newFontSize;
             document.getElementById('sizeValue').textContent = Math.round(newFontSize);
             document.getElementById('textWidth').value = newMaxWidth;
             document.getElementById('widthValue').textContent = newMaxWidth;
           }
-        };
-        
-        const onMouseUp = function() {
+        }
+
+        function stopResize() {
           document.removeEventListener('mousemove', onMouseMove);
           document.removeEventListener('mouseup', onMouseUp);
-        };
-        
+          document.removeEventListener('touchmove', onTouchMove);
+          document.removeEventListener('touchend', onTouchEnd);
+        }
+
+        function onMouseMove(e) { doResize(e.clientX, e.clientY); }
+        function onMouseUp() { stopResize(); }
+        function onTouchMove(e) {
+          e.preventDefault(); // 👈 bloquea scroll de la pantalla
+          const touch = e.touches[0];
+          doResize(touch.clientX, touch.clientY);
+        }
+        function onTouchEnd() { stopResize(); }
+
         document.addEventListener('mousemove', onMouseMove);
         document.addEventListener('mouseup', onMouseUp);
+        document.addEventListener('touchmove', onTouchMove, { passive: false }); // 👈 aquí
+        document.addEventListener('touchend', onTouchEnd);
+      }
+
+      // Para mouse
+      handle.addEventListener('mousedown', function(e) {
+        e.stopPropagation();
+        e.preventDefault();
+        startResize(e.clientX, e.clientY);
+      });
+
+      // Para pantallas táctiles
+      handle.addEventListener('touchstart', function(e) {
+        e.stopPropagation();
+        const touch = e.touches[0];
+        startResize(touch.clientX, touch.clientY);
       });
     }
+
+
 
     // Función para seleccionar elemento de texto
     function selectTextElement(element) {
@@ -991,8 +1114,6 @@ document.getElementById("generateForm").addEventListener("submit", async functio
     });
 
     const finalImage = canvas.toDataURL("image/png");
-
-    // 🔹 URL base del servidor dinámico
     const serverBaseURL = window.location.origin;
     const uploadEndpoint = `${serverBaseURL}/api/upload`;
 
@@ -1004,7 +1125,6 @@ document.getElementById("generateForm").addEventListener("submit", async functio
       });
 
       const data = await res.json();
-
       if (!data.url) {
         alert("❌ Error al subir la imagen");
         return;
@@ -1013,34 +1133,43 @@ document.getElementById("generateForm").addEventListener("submit", async functio
       const uniqueId = Date.now();
       const imageUrl = encodeURIComponent(data.url);
 
-      // 🔹 UsuarioId dinámico desde la URL
       const params = new URLSearchParams(window.location.search);
       const usuarioId = params.get("usuarioId") || "usuario-desconocido";
 
-      // URL final
-      const url = `${serverBaseURL}/vizualizacion_tarejta.html?id=${uniqueId}&img=${imageUrl}&usuarioId=${usuarioId}`;
+      const fullUrl = `${serverBaseURL}/vizualizacion_tarejta.html?id=${uniqueId}&img=${imageUrl}&usuarioId=${usuarioId}`;
 
-      // 🔹 Mostrar URL en un input con botón de copiar
+      // Elementos del DOM
       const urlContainer = document.getElementById("generatedUrlContainer");
       const urlInput = document.getElementById("generatedUrlInput");
-      urlInput.value = url;
+      const copyBtn = document.getElementById("copyUrlBtn");
+      const copyAnimation = document.getElementById("copyAnimation");
+
+      // Mostrar URL en el recuadro
+      urlInput.value = fullUrl;
       urlContainer.style.display = "flex";
 
-      // Botón copiar
-      const copyBtn = document.getElementById("copyUrlBtn");
+      // Función copiar
       copyBtn.onclick = () => {
-        urlInput.select();
-        urlInput.setSelectionRange(0, 99999); // Para móviles
-        navigator.clipboard.writeText(urlInput.value);
-        copyBtn.textContent = "✅ Copiado";
-        setTimeout(() => { copyBtn.textContent = "📋 Copiar"; }, 2000);
+        navigator.clipboard.writeText(fullUrl);
+
+        // Ocultar recuadro
+        urlContainer.style.display = "none";
+
+        // Mostrar animación con check y mensaje
+        copyAnimation.style.display = "flex";
+
+        // Volver al estado normal después de 10 segundos
+        setTimeout(() => {
+          copyAnimation.style.display = "none";
+          urlContainer.style.display = "flex";
+        }, 10000);
       };
 
-      // Guardar en Firestore → colección TarjetasInvitacion
+      // Guardar en Firestore
       const invitacionRef = doc(collection(db, "TarjetasInvitacion"));
       await setDoc(invitacionRef, {
         usuarioId: usuarioId,
-        url: url,
+        url: fullUrl,
         fecha: new Date().toISOString()
       });
 
@@ -1050,6 +1179,8 @@ document.getElementById("generateForm").addEventListener("submit", async functio
       console.error("❌ Error al subir la imagen o guardar en Firestore:", error);
     }
   });
+
+
 
 
 
